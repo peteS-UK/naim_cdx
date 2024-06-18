@@ -1,0 +1,18 @@
+{
+  "title": "Naim CDX",
+    "config": {
+      "error": {
+        "data": "Enter a name for your CDX",
+        "select": "You must either discover or enter details manually"
+      },
+      "step": {
+        "user": {
+          "data": {
+            "name": "Name of the Naim CDX"
+          },
+          "description": "Enter the name for your CDX",
+          "title": "Naim CDX"
+        }
+      }
+    }
+  }
