@@ -18,7 +18,7 @@ from homeassistant.helpers import (
 )
 from homeassistant.helpers.device_registry import DeviceInfo
 
-from .const import DOMAIN, SERVICE_SEND_COMMAND
+from .const import DOMAIN, SERVICE_SEND_COMMAND, CONF_BROADLINK
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,12 +29,12 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 )
 
 COMMANDS = {
-    "play": "JgAoABsfOTw5PTgfHD0aIDk8OjsdAAuEHR46Ozs4PB4bPR0eOTw5PB0ADQU=",
-    "pause": "JgAwABweHB8bHzk9OCAcOB8fOR8cHxweHAALohwgGx8bHzk9OR4cPBwfOh4cHhwfHAANBQAAAAAAAAAA",
-    "stop": "JgAUABwfOTw4PTkfGz0bHzo7HR45AA0FAAAAAA==",
-    "next": "JgAWABweHB8bHzk9OB8cPBwfOTw5HxwADQUAAA==",
-    "previous": "JgAUABwfOTk8OjseHTwcHzkeHDw5AA0FAAAAAA==",
-    "repeat": "",
+    "play": "JgAsAB0eHB4fHDk8OR8bPRwfOD07OhwAC4UbIBsfHCA3PTkfGz0bHzk9OTwbAA0FAAAAAAAAAAAAAAAA",
+    "pause": "JgAyAAZkHSEYIhkgOTs5IB45GyE5IBogGx8bAAujGx8bIRkgOT06HRw9Gx84IBshGiIYAA0FAAAAAAAA",
+    "stop": "JgAoAB4gODw5PDofGj4aIDg+Gx84AAujGyA4PTg9OR8bPRsgOTwbHzkADQU=",
+    "next": "JgAwABwfHB4cHzg9OR8dOzkgGx8bIBsgGgALoxwgGx4cIDk7Oh4cPDkfGx8dHxsfGwANBQAAAAAAAAAA",
+    "previous": "JgAsABwgOjs5PTgfHjs4IBsfHB4dOxwAC4UdHzg8OT04Hxw6PB4bIBogGj4dAA0FAAAAAAAAAAAAAAAA",
+    "repeat": "JgAsABsfOT05PDkfGx8cPBwfGyA4PRsAC4YbHzo8OD05HxsfHDwcHxsfOT0bAA0FAAAAAAAAAAAAAAAA",
 }
 
 SUPPORT_CDX = (
@@ -53,9 +53,13 @@ async def async_setup_entry(
     config_entry: config_entries.ConfigEntry,
     async_add_entities,
 ) -> None:
-    _LOGGER.critical("config entry: %s", config_entry.data)
-
-    async_add_entities([CDXDevice(hass, config_entry.data[CONF_NAME])])
+    async_add_entities(
+        [
+            CDXDevice(
+                hass, config_entry.data[CONF_NAME], config_entry.data[CONF_BROADLINK]
+            )
+        ]
+    )
 
     # Register entity services
     platform = entity_platform.async_get_current_platform()
@@ -71,7 +75,7 @@ async def async_setup_entry(
 class CDXDevice(MediaPlayerEntity):
     # Representation of a Emotiva Processor
 
-    def __init__(self, hass, name):
+    def __init__(self, hass, name, broadlink_entity):
         self._hass = hass
         self._state = MediaPlayerState.IDLE
         self._entity_id = "media_player.naim_cdx"
@@ -80,6 +84,7 @@ class CDXDevice(MediaPlayerEntity):
         ).replace(":", "_")
         self._device_class = "receiver"
         self._name = name
+        self._broadlink_entity = broadlink_entity
 
     @property
     def should_poll(self):
@@ -147,11 +152,10 @@ class CDXDevice(MediaPlayerEntity):
             "remote",
             "send_command",
             {
-                "entity_id": "remote.rm_mini_3",
+                "entity_id": self._broadlink_entity,
                 "num_repeats": "1",
                 "delay_secs": "0.4",
-                "device": "CDX",
-                "command": f"b64{COMMANDS[command]}",
+                "command": f"b64:{COMMANDS[command]}",
             },
         )
 
