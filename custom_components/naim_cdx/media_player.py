@@ -2,10 +2,8 @@ from __future__ import annotations
 
 import logging
 
-from .const import DOMAIN
-
 import voluptuous as vol
-
+from homeassistant import config_entries, core
 from homeassistant.components.media_player import (
     PLATFORM_SCHEMA,
     MediaPlayerEntity,
@@ -13,34 +11,30 @@ from homeassistant.components.media_player import (
     MediaPlayerState,
     RepeatMode,
 )
-
-from homeassistant import config_entries, core
-
-from homeassistant.const import CONF_HOST, CONF_NAME
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.const import CONF_NAME
 from homeassistant.helpers import (
     config_validation as cv,
-    discovery_flow,
-    entity_platform,
 )
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.start import async_at_start
+
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
-
-
-from .const import (
-    SERVICE_SEND_COMMAND,
-    DEFAULT_NAME,
-)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_NAME, default=None): cv.string,
     }
 )
+
+COMMANDS = {
+    "play": "JgAoABsfOTw5PTgfHD0aIDk8OjsdAAuEHR46Ozs4PB4bPR0eOTw5PB0ADQU=",
+    "pause": "JgAwABweHB8bHzk9OCAcOB8fOR8cHxweHAALohwgGx8bHzk9OR4cPBwfOh4cHhwfHAANBQAAAAAAAAAA",
+    "stop": "JgAUABwfOTw4PTkfGz0bHzo7HR45AA0FAAAAAA==",
+    "next": "JgAWABweHB8bHzk9OB8cPBwfOTw5HxwADQUAAA==",
+    "previous": "JgAUABwfOTk8OjseHTwcHzkeHDw5AA0FAAAAAA==",
+    "repeat": "",
+}
 
 SUPPORT_CDX = (
     MediaPlayerEntityFeature.PAUSE
@@ -58,7 +52,6 @@ async def async_setup_entry(
     config_entry: config_entries.ConfigEntry,
     async_add_entities,
 ) -> None:
-
     config = hass.data[DOMAIN][config_entry.entry_id]
 
     async_add_entities([CDXDevice(hass, config[CONF_NAME])])
@@ -68,7 +61,6 @@ class CDXDevice(MediaPlayerEntity):
     # Representation of a Emotiva Processor
 
     def __init__(self, hass, name):
-
         self._hass = hass
         self._state = MediaPlayerState.IDLE
         self._entity_id = "media_player.naim_cdx"
@@ -77,8 +69,6 @@ class CDXDevice(MediaPlayerEntity):
         ).replace(":", "_")
         self._device_class = "receiver"
         self._name = name
-
-    should_poll = False
 
     @property
     def should_poll(self):
@@ -147,7 +137,7 @@ class CDXDevice(MediaPlayerEntity):
                 "num_repeats": "1",
                 "delay_secs": "0.4",
                 "device": "CDX",
-                "command": command,
+                "command": f"b64{COMMANDS[command]}",
             },
         )
 
