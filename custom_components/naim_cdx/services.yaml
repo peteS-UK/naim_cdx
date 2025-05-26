@@ -6,9 +6,9 @@ send_command:
       integration: naim_cdx
       domain: media_player
   fields:
-    Command:
+    command:
       name: Command
-      description: "The Command to send to the device."
+      description: 'The Command to send to the device.'
       required: true
       selector:
         select:

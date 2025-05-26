@@ -66,7 +66,7 @@ async def async_setup_entry(
     platform.async_register_entity_service(
         SERVICE_SEND_COMMAND,
         {
-            vol.Required("Command"): cv.string,
+            vol.Required("command"): cv.string,
         },
         CDXDevice.send_command.__name__,
     )
@@ -190,6 +190,3 @@ class CDXDevice(MediaPlayerEntity):
     async def async_media_previous_track(self) -> None:
         """Send next track command."""
         await self._send_broadlink_command("previous")
-
-    async def async_update(self):
-        pass
