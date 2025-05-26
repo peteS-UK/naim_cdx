@@ -1,29 +1,27 @@
 import logging
 
-from typing import Any, Dict, Optional
+from typing import Dict
 
 import voluptuous as vol
 
-from .const import (
-    DOMAIN,
-)
+from .const import DOMAIN, CONF_BROADLINK
+
+from homeassistant.helpers.selector import EntitySelector, EntitySelectorConfig
 
 from homeassistant import config_entries, core, exceptions
-from homeassistant.const import CONF_HOST, CONF_NAME, CONF_MODEL
-from homeassistant.core import callback
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.const import CONF_NAME
 import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.entity_registry import (
-    async_entries_for_config_entry,
-    async_get,
-)
-
 
 _LOGGER = logging.getLogger(__name__)
 
 CONFIG_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_NAME): cv.string,
+        vol.Required(CONF_BROADLINK): EntitySelector(
+            EntitySelectorConfig(
+                filter={"integration": "broadlink", "domain": "remote"}
+            )
+        ),
     }
 )
 
@@ -35,7 +33,6 @@ class SelectError(exceptions.HomeAssistantError):
 
 
 async def validate_auth(hass: core.HomeAssistant, data: dict) -> None:
-
     if "name" not in data.keys():
         data["name"] = ""
 
@@ -45,7 +42,6 @@ async def validate_auth(hass: core.HomeAssistant, data: dict) -> None:
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-
     CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_PUSH
 
     async def async_step_user(self, user_input=None):

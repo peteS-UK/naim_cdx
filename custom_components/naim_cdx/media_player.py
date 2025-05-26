@@ -14,10 +14,11 @@ from homeassistant.components.media_player import (
 from homeassistant.const import CONF_NAME
 from homeassistant.helpers import (
     config_validation as cv,
+    entity_platform,
 )
 from homeassistant.helpers.device_registry import DeviceInfo
 
-from .const import DOMAIN
+from .const import DOMAIN, SERVICE_SEND_COMMAND
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -52,9 +53,19 @@ async def async_setup_entry(
     config_entry: config_entries.ConfigEntry,
     async_add_entities,
 ) -> None:
-    config = hass.data[DOMAIN][config_entry.entry_id]
+    _LOGGER.critical("config entry: %s", config_entry.data)
 
-    async_add_entities([CDXDevice(hass, config[CONF_NAME])])
+    async_add_entities([CDXDevice(hass, config_entry.data[CONF_NAME])])
+
+    # Register entity services
+    platform = entity_platform.async_get_current_platform()
+    platform.async_register_entity_service(
+        SERVICE_SEND_COMMAND,
+        {
+            vol.Required("Command"): cv.string,
+        },
+        CDXDevice.send_command.__name__,
+    )
 
 
 class CDXDevice(MediaPlayerEntity):
@@ -127,6 +138,9 @@ class CDXDevice(MediaPlayerEntity):
     @property
     def repeat(self):
         return RepeatMode.ONE
+
+    async def send_command(self, command):
+        await self._send_broadlink_command(command)
 
     async def _send_broadlink_command(self, command):
         await self._hass.services.async_call(
