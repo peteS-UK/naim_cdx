@@ -5,7 +5,6 @@ import logging
 import voluptuous as vol
 from homeassistant import config_entries, core
 from homeassistant.components.media_player import (
-    PLATFORM_SCHEMA,
     MediaPlayerEntity,
     MediaPlayerEntityFeature,
     MediaPlayerState,
@@ -21,12 +20,6 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from .const import DOMAIN, SERVICE_SEND_COMMAND, CONF_BROADLINK
 
 _LOGGER = logging.getLogger(__name__)
-
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
-    {
-        vol.Required(CONF_NAME, default=None): cv.string,
-    }
-)
 
 COMMANDS = {
     "play": "JgAsAB0eHB4fHDk8OR8bPRwfOD07OhwAC4UbIBsfHCA3PTkfGz0bHzk9OTwbAA0FAAAAAAAAAAAAAAAA",
