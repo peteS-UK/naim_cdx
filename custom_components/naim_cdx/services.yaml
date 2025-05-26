@@ -19,3 +19,14 @@ send_command:
             - stop
             - next
             - previous
+            - one
+            - two
+            - three
+            - four
+            - five
+            - six
+            - seven
+            - eight
+            - nine
+            - zero
+            - disp
