@@ -1,13 +1,14 @@
 {
   "domain": "naim_cdx",
   "name": "Naim CDX",
-  "codeowners": ["@peteS-UK"],
+  "codeowners": [
+    "@peteS-UK"
+  ],
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/peteS-UK/naim_cdx/blob/main/README.md",
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/peteS-UK/naim_cdx/issues",
   "requirements": [],
-  "version": "0.1"
+  "version": "0.2"
 }
-

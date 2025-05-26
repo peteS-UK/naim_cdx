@@ -2,10 +2,8 @@ from __future__ import annotations
 
 import logging
 
-from .const import DOMAIN
-
 import voluptuous as vol
-
+from homeassistant import config_entries, core
 from homeassistant.components.media_player import (
     PLATFORM_SCHEMA,
     MediaPlayerEntity,
@@ -13,34 +11,31 @@ from homeassistant.components.media_player import (
     MediaPlayerState,
     RepeatMode,
 )
-
-from homeassistant import config_entries, core
-
-from homeassistant.const import CONF_HOST, CONF_NAME
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.const import CONF_NAME
 from homeassistant.helpers import (
     config_validation as cv,
-    discovery_flow,
     entity_platform,
 )
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.start import async_at_start
+
+from .const import DOMAIN, SERVICE_SEND_COMMAND, CONF_BROADLINK
 
 _LOGGER = logging.getLogger(__name__)
-
-
-from .const import (
-    SERVICE_SEND_COMMAND,
-    DEFAULT_NAME,
-)
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_NAME, default=None): cv.string,
     }
 )
+
+COMMANDS = {
+    "play": "JgAsAB0eHB4fHDk8OR8bPRwfOD07OhwAC4UbIBsfHCA3PTkfGz0bHzk9OTwbAA0FAAAAAAAAAAAAAAAA",
+    "pause": "JgAyAAZkHSEYIhkgOTs5IB45GyE5IBogGx8bAAujGx8bIRkgOT06HRw9Gx84IBshGiIYAA0FAAAAAAAA",
+    "stop": "JgAoAB4gODw5PDofGj4aIDg+Gx84AAujGyA4PTg9OR8bPRsgOTwbHzkADQU=",
+    "next": "JgAwABwfHB4cHzg9OR8dOzkgGx8bIBsgGgALoxwgGx4cIDk7Oh4cPDkfGx8dHxsfGwANBQAAAAAAAAAA",
+    "previous": "JgAsABwgOjs5PTgfHjs4IBsfHB4dOxwAC4UdHzg8OT04Hxw6PB4bIBogGj4dAA0FAAAAAAAAAAAAAAAA",
+    "repeat": "JgAsABsfOT05PDkfGx8cPBwfGyA4PRsAC4YbHzo8OD05HxsfHDwcHxsfOT0bAA0FAAAAAAAAAAAAAAAA",
+}
 
 SUPPORT_CDX = (
     MediaPlayerEntityFeature.PAUSE
@@ -58,17 +53,29 @@ async def async_setup_entry(
     config_entry: config_entries.ConfigEntry,
     async_add_entities,
 ) -> None:
+    async_add_entities(
+        [
+            CDXDevice(
+                hass, config_entry.data[CONF_NAME], config_entry.data[CONF_BROADLINK]
+            )
+        ]
+    )
 
-    config = hass.data[DOMAIN][config_entry.entry_id]
-
-    async_add_entities([CDXDevice(hass, config[CONF_NAME])])
+    # Register entity services
+    platform = entity_platform.async_get_current_platform()
+    platform.async_register_entity_service(
+        SERVICE_SEND_COMMAND,
+        {
+            vol.Required("command"): cv.string,
+        },
+        CDXDevice.send_command.__name__,
+    )
 
 
 class CDXDevice(MediaPlayerEntity):
     # Representation of a Emotiva Processor
 
-    def __init__(self, hass, name):
-
+    def __init__(self, hass, name, broadlink_entity):
         self._hass = hass
         self._state = MediaPlayerState.IDLE
         self._entity_id = "media_player.naim_cdx"
@@ -77,8 +84,7 @@ class CDXDevice(MediaPlayerEntity):
         ).replace(":", "_")
         self._device_class = "receiver"
         self._name = name
-
-    should_poll = False
+        self._broadlink_entity = broadlink_entity
 
     @property
     def should_poll(self):
@@ -138,16 +144,18 @@ class CDXDevice(MediaPlayerEntity):
     def repeat(self):
         return RepeatMode.ONE
 
+    async def send_command(self, command):
+        await self._send_broadlink_command(command)
+
     async def _send_broadlink_command(self, command):
         await self._hass.services.async_call(
             "remote",
             "send_command",
             {
-                "entity_id": "remote.rm_mini_3",
+                "entity_id": self._broadlink_entity,
                 "num_repeats": "1",
                 "delay_secs": "0.4",
-                "device": "CDX",
-                "command": command,
+                "command": f"b64:{COMMANDS[command]}",
             },
         )
 
@@ -182,6 +190,3 @@ class CDXDevice(MediaPlayerEntity):
     async def async_media_previous_track(self) -> None:
         """Send next track command."""
         await self._send_broadlink_command("previous")
-
-    async def async_update(self):
-        pass
