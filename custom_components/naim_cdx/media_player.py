@@ -17,31 +17,20 @@ from homeassistant.helpers import (
 )
 from homeassistant.helpers.device_registry import DeviceInfo
 
-from .const import DOMAIN, SERVICE_SEND_COMMAND, CONF_BROADLINK
+from .const import (
+    DOMAIN,
+    SERVICE_SEND_COMMAND,
+    CONF_BROADLINK,
+    COMMANDS,
+    MANUFACTURER,
+    MODEL,
+)
+
 
 _LOGGER = logging.getLogger(__name__)
 
-COMMANDS = {
-    "play": "JgAsAB0eHB4fHDk8OR8bPRwfOD07OhwAC4UbIBsfHCA3PTkfGz0bHzk9OTwbAA0FAAAAAAAAAAAAAAAA",
-    "pause": "JgAyAAZkHSEYIhkgOTs5IB45GyE5IBogGx8bAAujGx8bIRkgOT06HRw9Gx84IBshGiIYAA0FAAAAAAAA",
-    "stop": "JgAoAB4gODw5PDofGj4aIDg+Gx84AAujGyA4PTg9OR8bPRsgOTwbHzkADQU=",
-    "next": "JgAwABwfHB4cHzg9OR8dOzkgGx8bIBsgGgALoxwgGx4cIDk7Oh4cPDkfGx8dHxsfGwANBQAAAAAAAAAA",
-    "previous": "JgAsABwgOjs5PTgfHjs4IBsfHB4dOxwAC4UdHzg8OT04Hxw6PB4bIBogGj4dAA0FAAAAAAAAAAAAAAAA",
-    "repeat": "JgAsABsfOT05PDkfGx8cPBwfGyA4PRsAC4YbHzo8OD05HxsfHDwcHxsfOT0bAA0FAAAAAAAAAAAAAAAA",
-    "disp": "JgAwAB0eHB8cHzk9Oh4dHhwfHTs5PRwfHQALdRsfHB8cHzk8Oh8cIBsbID05PRsgGwANBQAAAAAAAAAA",
-    "one": "JgAwAB4fOTw5PTkfHCAbHxwfHCAbIBw8GwALdh0eOT05PTkfGyAcHxsgHCAbIBs9GgANBQAAAAAAAAAA",
-    "two": "JgAwAB4dHB8bIDk9OR8bIBwfGyAbIBs9OQALkxwfHSAbHjk9OSAcIBogGx8cHxw8OAANBQAAAAAAAAAA",
-    "three": "JgAwAB0eOT03PzkfHCAcIBseGyEcPBwgGwALdRweOT05PTchHCAbHx0gGyAbPBweHAANBQAAAAAAAAAA",
-    "four": "JgAsAB4eNj85PDkgGyAdHhseHT03IRwAC5McHzk9Nz83IRwfHB8dHhw8OCMaAA0FAAAAAAAAAAAAAAAA",
-    "five": "JgAwAB0fHB8cHjk9NyIcIBseHCAcOzk9HAALdR0eHSAbIDVANiEcHx0eHCAcPDk8HAANBQAAAAAAAAAA",
-    "six": "JgAsABwgOD05PTkfHCAcHhwfHTscHzkAC5QbIDk8OT05IBsgGyAbHxw9HB85AA0FAAAAAAAAAAAAAAAA",
-    "seven": "JgAwABwfOT05PDogGiAbIBwgGT4cHxwfGwALdh0eOjw5PTkfHB8dHhwfHDwcHxwfHAANBQAAAAAAAAAA",
-    "eight": "JgAwAB0eHB8dHjk9OR8dHhwfHD05HxsgGwALlBwfHB8bHzo9OR8cHxsgGz05Hx0eHAANBQAAAAAAAAAA",
-    "nine": "JgAsABsgOTw5PTkfHCAbIBs7Ox8cOx0AC3YcHzk9OTw6HxsgGyAcPDkfHD0bAA0FAAAAAAAAAAAAAAAA",
-    "zero": "JgA0ABsgHB8bIDo7OSAbIBsgGyAcHxweHB8cAAuTHR4cHxwfOT05Hx0fGx8cHxwfGyAbIBwADQUAAAAA",
-}
 
-SUPPORT_CDX = (
+SUPPORT = (
     MediaPlayerEntityFeature.PAUSE
     | MediaPlayerEntityFeature.PREVIOUS_TRACK
     | MediaPlayerEntityFeature.NEXT_TRACK
@@ -58,11 +47,7 @@ async def async_setup_entry(
     async_add_entities,
 ) -> None:
     async_add_entities(
-        [
-            CDXDevice(
-                hass, config_entry.data[CONF_NAME], config_entry.data[CONF_BROADLINK]
-            )
-        ]
+        [Device(hass, config_entry.data[CONF_NAME], config_entry.data[CONF_BROADLINK])]
     )
 
     # Register entity services
@@ -72,18 +57,18 @@ async def async_setup_entry(
         {
             vol.Required("command"): cv.string,
         },
-        CDXDevice.send_command.__name__,
+        Device.send_command.__name__,
     )
 
 
-class CDXDevice(MediaPlayerEntity):
+class Device(MediaPlayerEntity):
     # Representation of a Emotiva Processor
 
     def __init__(self, hass, name, broadlink_entity):
         self._hass = hass
         self._state = MediaPlayerState.IDLE
-        self._entity_id = "media_player.naim_cdx"
-        self._unique_id = "naim_cdx_" + name.replace(" ", "_").replace(
+        self._entity_id = f"media_player.{DOMAIN}"
+        self._unique_id = f"{DOMAIN}_" + name.replace(" ", "_").replace(
             "-", "_"
         ).replace(":", "_")
         self._device_class = "receiver"
@@ -120,8 +105,8 @@ class CDXDevice(MediaPlayerEntity):
                 (DOMAIN, self._unique_id)
             },
             name=self._name,
-            manufacturer="Naim",
-            model="CDX",
+            manufacturer=MANUFACTURER,
+            model=MODEL,
         )
 
     @property
@@ -142,7 +127,7 @@ class CDXDevice(MediaPlayerEntity):
 
     @property
     def supported_features(self) -> MediaPlayerEntityFeature:
-        return SUPPORT_CDX
+        return SUPPORT
 
     @property
     def repeat(self):
