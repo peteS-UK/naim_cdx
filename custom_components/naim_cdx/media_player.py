@@ -20,10 +20,12 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from .const import (
     DOMAIN,
     SERVICE_SEND_COMMAND,
-    CONF_BROADLINK,
-    COMMANDS,
+    CONF_REMOTE_ENTITY,
+    BROADLINK_COMMANDS,
     MANUFACTURER,
     MODEL,
+    CONF_REMOTE_TYPE,
+    TUYA_COMMANDS,
 )
 
 
@@ -47,7 +49,14 @@ async def async_setup_entry(
     async_add_entities,
 ) -> None:
     async_add_entities(
-        [Device(hass, config_entry.data[CONF_NAME], config_entry.data[CONF_BROADLINK])]
+        [
+            Device(
+                hass,
+                config_entry.data[CONF_NAME],
+                config_entry.data[CONF_REMOTE_ENTITY],
+                config_entry.data[CONF_REMOTE_TYPE],
+            )
+        ]
     )
 
     # Register entity services
@@ -64,7 +73,7 @@ async def async_setup_entry(
 class Device(MediaPlayerEntity):
     # Representation of a Emotiva Processor
 
-    def __init__(self, hass, name, broadlink_entity):
+    def __init__(self, hass, name, remote_entity, remote_type):
         self._hass = hass
         self._state = MediaPlayerState.IDLE
         self._entity_id = f"media_player.{DOMAIN}"
@@ -73,7 +82,8 @@ class Device(MediaPlayerEntity):
         ).replace(":", "_")
         self._device_class = "receiver"
         self._name = name
-        self._broadlink_entity = broadlink_entity
+        self._remote_entity = remote_entity
+        self._remote_type = remote_type
 
     @property
     def should_poll(self):
@@ -134,48 +144,72 @@ class Device(MediaPlayerEntity):
         return RepeatMode.ONE
 
     async def send_command(self, command):
-        await self._send_broadlink_command(command)
+        await self._send_remote_command(command)
 
-    async def _send_broadlink_command(self, command):
-        await self._hass.services.async_call(
-            "remote",
-            "send_command",
-            {
-                "entity_id": self._broadlink_entity,
-                "num_repeats": "1",
-                "delay_secs": "0.4",
-                "command": f"b64:{COMMANDS[command]}",
-            },
-        )
+    async def _send_remote_command(self, command):
+        if self._remote_type == "Tuya RC5":
+            await self.hass.services.async_call(
+                "remote",
+                "send_command",
+                {
+                    "entity_id": self._remote_entity,
+                    "num_repeats": "1",
+                    "delay_secs": "0.4",
+                    "command": f"{TUYA_COMMANDS[command]['rc5']}",
+                },
+            )
+        if self._remote_type == "Tuya Raw":
+            await self.hass.services.async_call(
+                "remote",
+                "send_command",
+                {
+                    "entity_id": self._remote_entity,
+                    "num_repeats": "1",
+                    "delay_secs": "0.4",
+                    "command": f"{TUYA_COMMANDS[command]['raw']}",
+                },
+            )
+
+        if self._remote_type == "Broadlink":
+            await self.hass.services.async_call(
+                "remote",
+                "send_command",
+                {
+                    "entity_id": self._remote_entity,
+                    "num_repeats": "1",
+                    "delay_secs": "0.4",
+                    "command": f"b64:{BROADLINK_COMMANDS[command]}",
+                },
+            )
 
     async def async_set_repeat(self, repeat: RepeatMode) -> None:
         """Set the repeat mode."""
         if repeat == RepeatMode.ONE:
-            await self._send_broadlink_command("repeat")
+            await self._send_remote_command("repeat")
             self.async_schedule_update_ha_state()
 
     async def async_media_stop(self) -> None:
         """Send stop command to media player."""
-        await self._send_broadlink_command("stop")
+        await self._send_remote_command("stop")
         self._state = MediaPlayerState.IDLE
         self.async_schedule_update_ha_state()
 
     async def async_media_play(self) -> None:
         """Send play command to media player."""
-        await self._send_broadlink_command("play")
+        await self._send_remote_command("play")
         self._state = MediaPlayerState.PLAYING
         self.async_schedule_update_ha_state()
 
     async def async_media_pause(self) -> None:
         """Send pause command to media player."""
-        await self._send_broadlink_command("pause")
+        await self._send_remote_command("pause")
         self._state = MediaPlayerState.PAUSED
         self.async_schedule_update_ha_state()
 
     async def async_media_next_track(self) -> None:
         """Send next track command."""
-        await self._send_broadlink_command("next")
+        await self._send_remote_command("next")
 
     async def async_media_previous_track(self) -> None:
         """Send next track command."""
-        await self._send_broadlink_command("previous")
+        await self._send_remote_command("previous")

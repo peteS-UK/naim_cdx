@@ -1,26 +1,35 @@
 import logging
-
 from typing import Dict
 
+import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
-
-from .const import DOMAIN, CONF_BROADLINK
-
-from homeassistant.helpers.selector import EntitySelector, EntitySelectorConfig
-
 from homeassistant import config_entries, core, exceptions
 from homeassistant.const import CONF_NAME
-import homeassistant.helpers.config_validation as cv
+
+from .const import CONF_REMOTE_ENTITY, DOMAIN, CONF_REMOTE_TYPE
+
+from homeassistant.helpers.selector import (
+    EntitySelector,
+    EntitySelectorConfig,
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+)
 
 _LOGGER = logging.getLogger(__name__)
+
 
 CONFIG_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_NAME): cv.string,
-        vol.Required(CONF_BROADLINK): EntitySelector(
-            EntitySelectorConfig(
-                filter={"integration": "broadlink", "domain": "remote"}
+        vol.Required(CONF_REMOTE_TYPE): SelectSelector(
+            SelectSelectorConfig(
+                mode=SelectSelectorMode.DROPDOWN,
+                options=["Broadlink", "Tuya RC5", "Tuya Raw"],
             )
+        ),
+        vol.Required(CONF_REMOTE_ENTITY): EntitySelector(
+            EntitySelectorConfig(filter={"domain": "remote"})
         ),
     }
 )
