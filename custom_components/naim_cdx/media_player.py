@@ -1,36 +1,27 @@
+"""Media player platform for the Naim CDX integration."""
+
 from __future__ import annotations
 
-import logging
-
-import voluptuous as vol
+import probatio
 from homeassistant import config_entries, core
-from homeassistant.components.media_player import (
-    MediaPlayerEntity,
+from homeassistant.components.media_player import MediaPlayerEntity
+from homeassistant.components.media_player.const import (
+    MediaPlayerDeviceClass,
     MediaPlayerEntityFeature,
     MediaPlayerState,
     RepeatMode,
 )
 from homeassistant.const import CONF_NAME
-from homeassistant.helpers import (
-    config_validation as cv,
-    entity_platform,
-)
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import entity_platform
 from homeassistant.helpers.device_registry import DeviceInfo
 
 from .const import (
     DOMAIN,
-    SERVICE_SEND_COMMAND,
-    CONF_REMOTE_ENTITY,
-    BROADLINK_COMMANDS,
     MANUFACTURER,
     MODEL,
-    CONF_REMOTE_TYPE,
-    TUYA_COMMANDS,
+    SERVICE_SEND_COMMAND,
 )
-
-
-_LOGGER = logging.getLogger(__name__)
-
 
 SUPPORT = (
     MediaPlayerEntityFeature.PAUSE
@@ -51,10 +42,8 @@ async def async_setup_entry(
     async_add_entities(
         [
             Device(
-                hass,
                 config_entry.data[CONF_NAME],
-                config_entry.data[CONF_REMOTE_ENTITY],
-                config_entry.data[CONF_REMOTE_TYPE],
+                config_entry.runtime_data,
             )
         ]
     )
@@ -64,123 +53,42 @@ async def async_setup_entry(
     platform.async_register_entity_service(
         SERVICE_SEND_COMMAND,
         {
-            vol.Required("command"): cv.string,
+            probatio.Required("command"): cv.string,
         },
         Device.send_command.__name__,
     )
 
 
 class Device(MediaPlayerEntity):
-    # Representation of a Emotiva Processor
+    """Represent a Naim CDX."""
 
-    def __init__(self, hass, name, remote_entity, remote_type):
-        self._hass = hass
-        self._state = MediaPlayerState.IDLE
-        self._entity_id = f"media_player.{DOMAIN}"
-        self._unique_id = f"{DOMAIN}_" + name.replace(" ", "_").replace(
+    _attr_assumed_state = True
+    _attr_device_class = MediaPlayerDeviceClass.RECEIVER
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:disc"
+    _attr_name = None
+    _attr_repeat = RepeatMode.ONE
+    _attr_should_poll = False
+    _attr_supported_features = SUPPORT
+
+    def __init__(self, name, remote):
+        self._attr_state = MediaPlayerState.IDLE
+        self._attr_unique_id = f"{DOMAIN}_" + name.replace(" ", "_").replace(
             "-", "_"
         ).replace(":", "_")
-        self._device_class = "receiver"
-        self._name = name
-        self._remote_entity = remote_entity
-        self._remote_type = remote_type
-
-    @property
-    def should_poll(self):
-        return False
-
-    @property
-    def icon(self):
-        return "mdi:disc"
-
-    @property
-    def state(self) -> MediaPlayerState:
-        return self._state
-
-    @property
-    def name(self):
-        # return self._device.name
-        return None
-
-    @property
-    def has_entity_name(self):
-        return True
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return the device info."""
-        return DeviceInfo(
-            identifiers={
-                # Serial numbers are unique identifiers within a specific domain
-                (DOMAIN, self._unique_id)
-            },
-            name=self._name,
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, str(self._attr_unique_id))},
+            name=name,
             manufacturer=MANUFACTURER,
             model=MODEL,
         )
-
-    @property
-    def unique_id(self):
-        return self._unique_id
-
-    @property
-    def entity_id(self):
-        return self._entity_id
-
-    @property
-    def device_class(self):
-        return self._device_class
-
-    @entity_id.setter
-    def entity_id(self, entity_id):
-        self._entity_id = entity_id
-
-    @property
-    def supported_features(self) -> MediaPlayerEntityFeature:
-        return SUPPORT
-
-    @property
-    def repeat(self):
-        return RepeatMode.ONE
+        self._remote = remote
 
     async def send_command(self, command):
         await self._send_remote_command(command)
 
     async def _send_remote_command(self, command):
-        if self._remote_type == "Tuya RC5":
-            await self.hass.services.async_call(
-                "remote",
-                "send_command",
-                {
-                    "entity_id": self._remote_entity,
-                    "num_repeats": "1",
-                    "delay_secs": "0.4",
-                    "command": f"{TUYA_COMMANDS[command]['rc5']}",
-                },
-            )
-        if self._remote_type == "Tuya Raw":
-            await self.hass.services.async_call(
-                "remote",
-                "send_command",
-                {
-                    "entity_id": self._remote_entity,
-                    "num_repeats": "1",
-                    "delay_secs": "0.4",
-                    "command": f"{TUYA_COMMANDS[command]['raw']}",
-                },
-            )
-
-        if self._remote_type == "Broadlink":
-            await self.hass.services.async_call(
-                "remote",
-                "send_command",
-                {
-                    "entity_id": self._remote_entity,
-                    "num_repeats": "1",
-                    "delay_secs": "0.4",
-                    "command": f"b64:{BROADLINK_COMMANDS[command]}",
-                },
-            )
+        await self._remote.send(command, self._context)
 
     async def async_set_repeat(self, repeat: RepeatMode) -> None:
         """Set the repeat mode."""
@@ -191,19 +99,19 @@ class Device(MediaPlayerEntity):
     async def async_media_stop(self) -> None:
         """Send stop command to media player."""
         await self._send_remote_command("stop")
-        self._state = MediaPlayerState.IDLE
+        self._attr_state = MediaPlayerState.IDLE
         self.async_schedule_update_ha_state()
 
     async def async_media_play(self) -> None:
         """Send play command to media player."""
         await self._send_remote_command("play")
-        self._state = MediaPlayerState.PLAYING
+        self._attr_state = MediaPlayerState.PLAYING
         self.async_schedule_update_ha_state()
 
     async def async_media_pause(self) -> None:
         """Send pause command to media player."""
         await self._send_remote_command("pause")
-        self._state = MediaPlayerState.PAUSED
+        self._attr_state = MediaPlayerState.PAUSED
         self.async_schedule_update_ha_state()
 
     async def async_media_next_track(self) -> None:

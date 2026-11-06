@@ -3,14 +3,41 @@
   "config": {
     "error": {
       "data": "Enter a name for your CDX",
-      "select": "You must either discover or enter details manually"
+      "invalid_emitter": "Select an available infrared emitter"
+    },
+    "abort": {
+      "no_emitters": "Set up an infrared emitter before adding this integration"
     },
     "step": {
       "user": {
         "data": {
           "name": "Name of the Naim CDX",
-          "remote_entity": "Select the Remote entity",
-          "remote_type": "What type of IR blaster"
+          "infrared_entity_id": "Infrared emitter"
+        }
+      }
+    }
+  },
+  "issues": {
+    "reselect_ir_emitter": {
+      "title": "Select an infrared emitter for {name}",
+      "description": "This entry uses a legacy remote entity. Select an infrared emitter to restore command sending.",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Select infrared emitter",
+            "description": "Select an infrared emitter to replace the legacy remote for {name}.",
+            "data": {
+              "infrared_entity_id": "Infrared emitter"
+            }
+          }
+        },
+        "abort": {
+          "no_emitters": "Set up an infrared emitter before repairing this entry",
+          "entry_not_found": "The Naim CDX entry no longer exists",
+          "reload_failed": "The Naim CDX entry could not be reloaded"
+        },
+        "error": {
+          "invalid_emitter": "Select an available infrared emitter"
         }
       }
     }
