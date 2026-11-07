@@ -20,7 +20,6 @@
   "issues": {
     "reselect_ir_emitter": {
       "title": "Select an infrared emitter for {name}",
-      "description": "This entry uses a legacy remote entity. Select an infrared emitter to restore command sending.",
       "fix_flow": {
         "step": {
           "confirm": {
