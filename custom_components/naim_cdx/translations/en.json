@@ -17,6 +17,22 @@
       }
     }
   },
+  "options": {
+    "error": {
+      "invalid_emitter": "Select an available infrared emitter"
+    },
+    "abort": {
+      "no_emitters": "Set up an infrared emitter before changing settings",
+      "migration_required": "Complete the infrared emitter migration repair before changing settings"
+    },
+    "step": {
+      "init": {
+        "data": {
+          "infrared_entity_id": "Infrared emitter"
+        }
+      }
+    }
+  },
   "issues": {
     "reselect_ir_emitter": {
       "title": "Select an infrared emitter for {name}",

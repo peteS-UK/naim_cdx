@@ -20,3 +20,7 @@ Configuration is done through the Home Assistant UI.  Once you're installed the 
 instance.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=naim_cdx)
 
 This will display the configuration page
+
+To change the infrared emitter later, open the Naim CDX integration in
+**Settings > Devices & services** and select **Configure**. Existing legacy
+remote entries must first complete the infrared emitter repair.
