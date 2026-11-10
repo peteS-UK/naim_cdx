@@ -38,3 +38,7 @@ instance.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://m
 This will display the configuration page
 
 <img width="732" height="452" alt="image" src="https://github.com/user-attachments/assets/44ac5cf9-11ed-408a-8ba2-f5ff25d435d8" />
+
+## Options
+
+To change the infrared emitter later, open the Naim CDX integration in **Settings > Devices & services** and select **Configure**.

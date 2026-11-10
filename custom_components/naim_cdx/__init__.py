@@ -38,7 +38,8 @@ async def async_setup_entry(
     """Set up platform from a ConfigEntry."""
 
     _update_legacy_remote_issue(hass, entry)
-    entry.runtime_data = CdxRemote(hass, entry.data.get(CONF_INFRARED_ENTITY_ID))
+    data = {**entry.data, **entry.options}
+    entry.runtime_data = CdxRemote(hass, data.get(CONF_INFRARED_ENTITY_ID))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
